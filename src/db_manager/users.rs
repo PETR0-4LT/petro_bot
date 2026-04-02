@@ -68,7 +68,7 @@ pub fn push_new(id : &str, bonus_xp : u32)
 pub fn update_or_insert(id : &str, bonus_xp : u32)
 {
     let conn = get_connection!();
-    if exists(id, &conn)
+    if !exists(id, &conn)
     {
         insert(id, bonus_xp, &conn);
     }
