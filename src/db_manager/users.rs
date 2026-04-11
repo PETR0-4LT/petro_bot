@@ -7,13 +7,13 @@ use std::sync::MutexGuard;
 fn insert(id: &str, bonus_xp: u32, connection: &MutexGuard<Connection>) {
     let sql = "INSERT INTO users (user_id, bonus_xp) VALUES (:id, :bonus_xp)";
     connection
-        .execute(&sql, &[(":id", id), (":bonus_xp", &bonus_xp.to_string())])
+        .execute(sql, &[(":id", id), (":bonus_xp", &bonus_xp.to_string())])
         .unwrap();
 }
 
 fn exists(id: &str, connection: &MutexGuard<Connection>) -> bool {
     let sql = "SELECT user_id FROM users WHERE user_id = :id";
-    let mut stmt = connection.prepare(&sql).unwrap();
+    let mut stmt = connection.prepare(sql).unwrap();
     let mut rows = stmt.query(&[(":id", &id)]).unwrap();
     rows.next().unwrap().is_some()
 }
@@ -27,16 +27,12 @@ pub fn query_exists(id: &str) -> bool {
 pub fn query_xp(id: &str) -> u32 {
     let conn = get_connection!();
     let sql = "SELECT bonus_xp FROM users WHERE user_id = :id";
-    let mut stmt = conn.prepare(&sql).unwrap();
+    let mut stmt = conn.prepare(sql).unwrap();
     let mut rows = stmt.query(&[(":id", &id)]).unwrap();
 
     match rows.next().unwrap() {
-        None => {
-            return 0;
-        }
-        Some(row) => {
-            return row.get(0).unwrap();
-        }
+        None => 0,
+        Some(row) => row.get(0).unwrap(),
     }
 }
 

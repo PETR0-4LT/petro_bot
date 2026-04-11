@@ -8,12 +8,12 @@ pub fn run(options: &[ResolvedOption]) -> String {
     }) = options.first()
     {
         if db_manager::channels::query_is_rp(&channel.id.to_string()) {
-            return format!(
+            format!(
                 "{} is in the list of XP channels.",
-                channel.name.as_ref().unwrap().to_string()
-            );
+                channel.name.as_ref().unwrap()
+            )
         } else {
-            return "I have NEVER heard of this channel in my LIFE vro".to_string();
+            "I have NEVER heard of this channel in my LIFE vro".to_string()
         }
     } else {
         "Please provide a valid channel".to_string()

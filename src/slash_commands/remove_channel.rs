@@ -12,7 +12,7 @@ pub fn run(options: &[ResolvedOption]) -> String {
         db_manager::channels::delete(&channel.id.to_string());
         format!(
             "{} removed from the list of XP channels.",
-            channel.name.as_ref().unwrap().to_string()
+            channel.name.as_ref().unwrap()
         )
     } else {
         "Please provide a valid channel".to_string()
