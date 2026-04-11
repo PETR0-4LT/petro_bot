@@ -9,8 +9,8 @@ pub mod users;
 
 static DB: OnceLock<std::sync::Mutex<Connection>> = OnceLock::new();
 
-pub fn initialize_db() {
-    let conn = Connection::open("test-db.db3").expect("DB open failed");
+pub fn initialize_db(path: &str) {
+    let conn = Connection::open(path).expect("DB open failed");
     DB.set(std::sync::Mutex::new(conn))
         .expect("DB already initialized");
 }

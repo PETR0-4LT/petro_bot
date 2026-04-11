@@ -6,6 +6,7 @@ mod db_manager;
 #[allow(dead_code)]
 mod slash_commands;
 
+use clap::Parser;
 use serenity::all::{CreateInteractionResponseMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
@@ -72,13 +73,26 @@ impl EventHandler for Handler {
             .unwrap();
     }
 }
+
+/// Simple bot to track xp of users
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Token to authenticate with discord
+    #[arg(short, long)]
+    token: String,
+
+    /// File path of the sqlite3 database
+    #[arg(short, long, default_value = "test-db.db3")]
+    database: String,
+}
+
 #[tokio::main]
 async fn main() {
-    db_manager::initialize_db();
+    let args = Args::parse();
 
-    // Run this with the token as command line parameter
-    let args: Vec<String> = env::args().collect();
-    let token = &args[1];
+    db_manager::initialize_db(&args.database);
+
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
@@ -86,7 +100,7 @@ async fn main() {
 
     // Create a new instance of the Client, logging in as a bot. This will automatically prepend
     // your bot token with "Bot ", which is a requirement by Discord for bot users.
-    let mut client = Client::builder(&token, intents)
+    let mut client = Client::builder(&args.token, intents)
         .event_handler(Handler)
         .await
         .expect("Err creating client");
