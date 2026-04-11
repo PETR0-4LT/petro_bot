@@ -1,17 +1,16 @@
-use std::sync::{OnceLock};
-use rusqlite::{Connection};
+use rusqlite::Connection;
+use std::sync::OnceLock;
 
-pub mod users;
 pub mod channels;
+pub mod users;
 
 // only way I can make the db connection a global variable is with this fuckass mutex I don't realy know how to use.
 // I can't otherwise pass the connection as parameter to functions because I can't change the message handler's parameter list as to pass it along
 
-static DB : OnceLock<std::sync::Mutex<Connection>> = OnceLock::new();
+static DB: OnceLock<std::sync::Mutex<Connection>> = OnceLock::new();
 
-pub fn initialize_db()
-{
-    let conn = Connection::open("test-db.db3").expect("DB open failed");
+pub fn initialize_db(path: &str) {
+    let conn = Connection::open(path).expect("DB open failed");
     DB.set(std::sync::Mutex::new(conn))
         .expect("DB already initialized");
 }
@@ -19,11 +18,7 @@ pub fn initialize_db()
 // far from the proper way to do this but idc
 macro_rules! get_connection {
     () => {
-        DB
-    .get()
-    .expect("i hate rust")
-    .lock()
-    .unwrap()
-    }
+        DB.get().expect("i hate rust").lock().unwrap()
+    };
 }
 pub(crate) use get_connection;
