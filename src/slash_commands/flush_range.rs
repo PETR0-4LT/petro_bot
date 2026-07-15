@@ -29,14 +29,14 @@ pub fn run(options: &[ResolvedOption]) -> DisplayType {
         {
             for i in users
             {
-                arr.push(format!("```?add-xp <@{}> {}```", i.0, i.1));
+                arr.push(format!("```!give-xp <@{}> {}```", i.0, i.1));
             }
         }
         else // IT WAS SO GOOD I EVEN WROTE IT TWICE
         {
             for i in users
             {
-                arr.push(format!("?add-xp <@{}> {}", i.0, i.1));
+                arr.push(format!("!give-xp <@{}> {}", i.0, i.1));
             }               
         }
         DisplayType::StringArr(arr)
