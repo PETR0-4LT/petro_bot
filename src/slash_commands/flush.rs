@@ -1,19 +1,19 @@
-use crate::db_manager;
+use crate::{db_manager, slash_commands::DisplayType};
 use serenity::all::{
-    CreateCommand, CreateCommandOption, Permissions, ResolvedOption, ResolvedValue,
+    CreateCommand, CreateCommandOption, Permissions, ResolvedOption, ResolvedValue
 };
 
-pub fn run(options: &[ResolvedOption]) -> String {
+pub fn run(options: &[ResolvedOption]) -> DisplayType {
     if let Some(ResolvedOption {
         value: ResolvedValue::User(user, _),
         ..
     }) = options.first()
     {
         let xp = db_manager::users::query_xp(&user.id.to_string());
-        db_manager::users::delete(&user.id.to_string());
-        format!("Reset {}'s bonus xp of {} to 0.", user.tag(), xp)
+        db_manager::users::set_zero(&user.id.to_string());
+        DisplayType::Text(format!("Reset {}'s bonus xp of {} to 0.", user.tag(), xp))
     } else {
-        "Please provide a valid user".to_string()
+        DisplayType::Text("Please provide a valid user".to_string())
     }
 }
 

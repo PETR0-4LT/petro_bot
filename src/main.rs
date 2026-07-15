@@ -7,7 +7,7 @@ mod db_manager;
 mod slash_commands;
 
 use clap::Parser;
-use serenity::all::{CreateInteractionResponseMessage, GuildId, Interaction};
+use serenity::all::{CommandInteraction, CreateInteractionResponseFollowup, CreateInteractionResponseMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
@@ -28,23 +28,32 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
             let content = match command.data.name.as_str() {
-                "bonus" => Some(slash_commands::bonus::run(&command.data.options())),
-                "flush" => Some(slash_commands::flush::run(&command.data.options())),
-                "add_channel" => Some(slash_commands::add_channel::run(&command.data.options())),
-                "remove_channel" => {
-                    Some(slash_commands::remove_channel::run(&command.data.options()))
-                }
-                "is_xp_channel" => Some(slash_commands::is_rp::run(&command.data.options())),
-                _ => Some("not implemented :(".to_string()),
+                "bonus" => slash_commands::bonus::run(&command.data.options()),
+                "flush" => slash_commands::flush::run(&command.data.options()),
+                "add_channel" => slash_commands::add_channel::run(&command.data.options()),
+                "remove_channel" => slash_commands::remove_channel::run(&command.data.options()),
+                "is_xp_channel" => slash_commands::is_rp::run(&command.data.options()),
+                "leaderboard" => slash_commands::leaderboard::run(&command.data.options()),
+                "flush_range" => slash_commands::flush_range::run(&command.data.options()),
+                _ => slash_commands::DisplayType::Text("not implemented :(".to_string())
             };
 
-            if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = serenity::all::CreateInteractionResponse::Message(data);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    println!("Cannot respond to slash command: {why}");
+            let data = match content
+            {
+                // string array resposne type (sending multiple sepparate messages to one command) is the only case that needs a different behaviour.
+                // it uses an early return. Everything else uses the bottom send_response() call. This is ugly. I could've avoided it but
+                // I didn't want to change the send_response() 'data' param to be a vector, because most would be single-element; Nor add another layer to the DisplayType enum for Single/Multiple. 
+                slash_commands::DisplayType::StringArr(arr) => 
+                {
+                    send_messages(&ctx, &command, arr).await;
+                    return; 
                 }
-            }
+                slash_commands::DisplayType::Text(src) => CreateInteractionResponseMessage::new().content(src),
+                slash_commands::DisplayType::EmbedArr(arr) => CreateInteractionResponseMessage::new().embeds(arr), // embedArr doesn't have the same problem because it's alr. supported
+                slash_commands::DisplayType::Embed(val) => CreateInteractionResponseMessage::new().embed(val)
+            };
+            // BEHAVIOUR FOR ALL EXCEPT STRINGARR
+            send_response(&ctx, &command, data).await;
         }
     }
 
@@ -66,6 +75,8 @@ impl EventHandler for Handler {
                     slash_commands::is_rp::register(),
                     slash_commands::add_channel::register(),
                     slash_commands::remove_channel::register(),
+                    slash_commands::leaderboard::register(),
+                    slash_commands::flush_range::register()
                 ],
             )
             .await
@@ -110,5 +121,27 @@ async fn main() {
     // it reconnects.
     if let Err(why) = client.start().await {
         println!("Client error: {why:?}");
+    }
+}
+
+
+async fn send_response(ctx : &Context, command : &CommandInteraction, data : CreateInteractionResponseMessage)
+{
+    let builder = serenity::all::CreateInteractionResponse::Message(data);
+    if let Err(why) = command.create_response(&ctx.http, builder).await {
+        println!("Cannot respond to slash command: {why}");
+    }
+}
+async fn send_messages(ctx : &Context, command : &CommandInteraction, string_arr : Vec<String>)
+{
+    let mut iter = string_arr.into_iter();
+    let init_response =  CreateInteractionResponseMessage::new().content(iter.next().unwrap());
+    send_response(ctx, command, init_response).await;
+    for i in iter
+    {
+        let builder = CreateInteractionResponseFollowup::new().content(i);
+        if let Err(why) = command.create_followup(&ctx.http, builder).await {
+            println!("Cannot respond to slash command: {why}");
+        }
     }
 }

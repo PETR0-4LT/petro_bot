@@ -1,21 +1,23 @@
-use crate::db_manager;
+use crate::{db_manager, slash_commands::DisplayType};
 use serenity::all::{
     CreateCommand, CreateCommandOption, Permissions, ResolvedOption, ResolvedValue,
 };
 
-pub fn run(options: &[ResolvedOption]) -> String {
+pub fn run(options: &[ResolvedOption]) -> DisplayType {
     if let Some(ResolvedOption {
         value: ResolvedValue::Channel(channel),
         ..
     }) = options.first()
     {
         db_manager::channels::delete(&channel.id.to_string());
-        format!(
-            "{} removed from the list of XP channels.",
-            channel.name.as_ref().unwrap()
-        )
+        return DisplayType::Text
+        (
+            format!(
+                "{} removed from the list of XP channels.",
+                channel.name.as_ref().unwrap()
+        ));
     } else {
-        "Please provide a valid channel".to_string()
+        return DisplayType::Text("Please provide a valid channel".to_string());
     }
 }
 

@@ -4,9 +4,6 @@ use std::sync::OnceLock;
 pub mod channels;
 pub mod users;
 
-// only way I can make the db connection a global variable is with this fuckass mutex I don't realy know how to use.
-// I can't otherwise pass the connection as parameter to functions because I can't change the message handler's parameter list as to pass it along
-
 static DB: OnceLock<std::sync::Mutex<Connection>> = OnceLock::new();
 
 pub fn initialize_db(path: &str) {

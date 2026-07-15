@@ -18,6 +18,24 @@ fn exists(id: &str, connection: &MutexGuard<Connection>) -> bool {
     rows.next().unwrap().is_some()
 }
 
+// returns an array of users and their xp whose bonus xp is greater than min_xp
+fn get_users(min_xp: u32, connection: &MutexGuard<Connection>) -> Vec<(String, u32)>
+{
+    let sql = "SELECT user_id, bonus_xp FROM users WHERE bonus_xp > :min_xp ORDER BY bonus_xp DESC";
+    let mut stmt = connection.prepare(sql).unwrap();
+    
+    let rows = stmt.query_map( 
+        &[(":min_xp", &min_xp)], 
+        |row| 
+        {
+            let user_id: i64 = row.get(0)?;
+            let bonus_xp: i64 = row.get(1)?;
+            Ok((user_id.to_string(), bonus_xp as u32))
+        }
+    ).unwrap();
+    rows.collect::<Result<_, _>>().unwrap() // I hate rust so much its unreal
+}
+
 // returns TRVE if there exists a user with the given user_id in the users db
 pub fn query_exists(id: &str) -> bool {
     let conn = get_connection!();
@@ -34,6 +52,23 @@ pub fn query_xp(id: &str) -> u32 {
         None => 0,
         Some(row) => row.get(0).unwrap(),
     }
+}
+
+// returns a vector of tuples (user_id, bonus_xp), where user's xp > min_xp
+pub fn query_users(min_xp: u32) -> Vec<(String, u32)>
+{
+    let conn = get_connection!();
+    get_users(min_xp, &conn)
+}
+
+pub fn flush_users(min_xp: u32) -> Vec<(String, u32)>
+{
+    let conn = get_connection!();
+    let ret = get_users(min_xp, &conn);
+
+    let sql = "UPDATE users SET bonus_xp = 0 WHERE bonus_xp >= :min_xp";
+    conn.execute(sql, &[(":min_xp", &min_xp)]).unwrap();
+    ret
 }
 
 pub fn delete_all() {
@@ -53,12 +88,21 @@ pub fn push_new(id: &str, bonus_xp: u32) {
     insert(id, bonus_xp, &conn);
 }
 
+pub fn set_zero(id: &str) {
+    let conn = get_connection!();
+    let update_sql = "UPDATE users SET bonus_xp = 0 WHERE user_id = :id";
+        conn.execute(
+            update_sql,
+            &[(":id", id)]
+        )
+        .unwrap();
+}
+
 pub fn update_or_insert(id: &str, bonus_xp: u32) {
     let conn = get_connection!();
     if !exists(id, &conn) {
         insert(id, bonus_xp, &conn);
     } else {
-        //update
         let update_sql = "UPDATE users SET bonus_xp = bonus_xp + :bonus WHERE user_id = :id";
         conn.execute(
             update_sql,
