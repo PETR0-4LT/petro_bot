@@ -66,7 +66,7 @@ pub fn flush_users(min_xp: u32) -> Vec<(String, u32)>
     let conn = get_connection!();
     let ret = get_users(min_xp, &conn);
 
-    let sql = "UPDATE users SET bonus_xp = 0 WHERE bonus_xp >= :min_xp";
+    let sql = "UPDATE users SET bonus_xp = 0 WHERE bonus_xp > :min_xp";
     conn.execute(sql, &[(":min_xp", &min_xp)]).unwrap();
     ret
 }
