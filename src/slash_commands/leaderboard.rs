@@ -18,7 +18,7 @@ pub fn run(options: &[ResolvedOption]) -> DisplayType {
     
     let users = db_manager::users::query_users(min_xp as u32);
     let mut embed = CreateEmbed::new().title("Leaderboard");
-    for (i, (user_id, xp)) in users.iter().enumerate()
+    for (i, (user_id, xp)) in users.iter().take(25).enumerate() // DISCORD EMBED FIELD LIMIT IS 25
     {
         embed = embed.field((i + 1).to_string(), format!(" <@{}>  - {} \n", user_id, xp), true);
     }
@@ -27,7 +27,7 @@ pub fn run(options: &[ResolvedOption]) -> DisplayType {
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("leaderboard")
-        .description("Lists all users of XP > [CUTOFF]")
+        .description("Lists first 25 users of XP > [CUTOFF]")
         .add_option(
             CreateCommandOption::new(
                 serenity::all::CommandOptionType::Integer,
